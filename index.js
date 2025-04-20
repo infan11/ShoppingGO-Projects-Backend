@@ -79,6 +79,7 @@ async function run() {
         }
 
      // Check if user is an admin
+   
 app.get('/users/admin/:email', verifyToken, async (req, res) => {
     const email = req.params.email;
   
@@ -189,6 +190,12 @@ app.get('/users/admin/:email', verifyToken, async (req, res) => {
             console.log(result);
             res.send(result)
         })
+        app.patch("/users/user/:id", verifyToken, async (req, res) => {
+            const id = req.params.id;
+            const result = await usersCollection.updateOne( { _id: new ObjectId(id) }, { $set: { role: "user" } }
+            );
+            res.send(result);
+          });
 
         const verifyOwner = async (req, res, next) => {
             const email = req.decoded.email;

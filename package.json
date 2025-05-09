@@ -10,10 +10,12 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@emailjs/nodejs": "^5.0.2",
     "axios": "^1.7.9",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
+    "firebase-admin": "^13.3.0",
     "jsonwebtoken": "^9.0.2",
     "mongodb": "^6.11.0",
     "nodemon": "^3.1.7",

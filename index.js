@@ -36,6 +36,7 @@ async function run() {
         const addFoodCollection = client.db("FOODHUB").collection("addFood");
         const paymentCollection = client.db("FOODHUB").collection("payment");
         const districtCollection = client.db("FOODHUB").collection("districtAvailable");
+        const searchDataCollection = client.db("FOODHUB").collection("search-data");
         // token create
         app.post("/jwt", async (req, res) => {
             const user = req.body;
@@ -56,6 +57,25 @@ async function run() {
                 next();
             })
         }
+        // serach data save 
+        app.post("/search-data", async (req, res) => {
+            const serachBar = req.body;
+            const result = await searchDataCollection.insertOne(serachBar);
+            res.send(result)
+        })
+        app.get("/search-data", verifyToken, async (req, res) => {
+            const email = req.query.email; // changed from req.params
+            const result = await searchDataCollection.find({ email }).toArray();
+            res.send(result);
+          });
+          
+          // DELETE (add keyword to params)
+          app.delete("/search-data/:keyword", verifyToken, async (req, res) => {
+            const keyword = decodeURIComponent(req.params.keyword);
+            const result = await searchDataCollection.deleteOne({ keyword });
+            res.send(result);
+          });
+
         // verify admin 
         const verifyAdmin = async (req, res, next) => {
             const email = req.decoded.email;
@@ -114,22 +134,22 @@ async function run() {
         })
         app.get('/users/check-name', async (req, res) => {
             try {
-              const { name, email } = req.query;
-              if (!name || !email) {
-                return res.status(400).json({ error: "Name and email are required." });
-              }
-          
-              const existingUser = await usersCollection.findOne({
-                name: name.trim(),
-                email: { $ne: email } // ignore current user's name
-              });
-          
-              res.json({ exists: !!existingUser });
+                const { name, email } = req.query;
+                if (!name || !email) {
+                    return res.status(400).json({ error: "Name and email are required." });
+                }
+
+                const existingUser = await usersCollection.findOne({
+                    name: name.trim(),
+                    email: { $ne: email } // ignore current user's name
+                });
+
+                res.json({ exists: !!existingUser });
             } catch (error) {
-              console.error("Error checking name:", error);
-              res.status(500).json({ error: "Internal server error." });
+                console.error("Error checking name:", error);
+                res.status(500).json({ error: "Internal server error." });
             }
-          })
+        })
         // app.post("/users" , async (req, res) => {
         //     const userInfo = req.body;
         //     const result = await usersCollection.insertOne(userInfo);
@@ -146,11 +166,11 @@ async function run() {
             const updateDoc = {
                 $set: {
                     ...user,
-                     uid: uid ,
-                     displayName, photoURL ,
-                     date: Date.now(),
+                    uid: uid,
+                    displayName, photoURL,
+                    date: Date.now(),
                     isNew: user.restaurantAdddress && user.restaurantNumber ? true : false,
-                  
+
                 }
 
             }
@@ -160,30 +180,30 @@ async function run() {
         app.put("/users/:email", async (req, res) => {
             const email = req.params.email;
             const user = req.body;
-          
+
             const query = { email };
             const options = { upsert: true };
-          
+
             const updateDoc = {
-              $set: {
-                name: user.name,
-                photo: user.photo,
-                email: user.email,
-                dob: user.dob,        // ✅ Date of Birth
-                phoneNumber: user.phoneNumber,  // ✅ Mobile Number
-                address: user.address 
-               
-              }
+                $set: {
+                    name: user.name,
+                    photo: user.photo,
+                    email: user.email,
+                    dob: user.dob,        // ✅ Date of Birth
+                    phoneNumber: user.phoneNumber,  // ✅ Mobile Number
+                    address: user.address
+
+                }
             };
-          
+
             try {
-              const result = await usersCollection.updateOne(query, updateDoc, options);
-              res.send(result);
+                const result = await usersCollection.updateOne(query, updateDoc, options);
+                res.send(result);
             } catch (error) {
-              console.error("Failed to update user:", error);
-              res.status(500).send({ error: "Failed to update user" });
+                console.error("Failed to update user:", error);
+                res.status(500).send({ error: "Failed to update user" });
             }
-          });
+        });
         app.delete("/users/:id", verifyToken, verifyAdmin, async (req, res) => {
             const id = req.params.id;
             const query = { _id: new ObjectId(id) }
@@ -525,6 +545,7 @@ async function run() {
                 const query = { _id: new ObjectId(id) };
                 const updateDoc = {
                     $set: { quantity: quantity },
+                    quantity: parseFloat(1)
                 };
 
                 const result = await addFoodCollection.updateOne(query, updateDoc);

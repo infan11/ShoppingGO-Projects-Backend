@@ -2,7 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const app = express();
 require("dotenv").config();
-const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+const { MongoClient, ServerApiVersion , ObjectId} = require('mongodb');
 const port = process.env.PORT || 5000;
 const stripe = require("stripe")(process.env.VITE_STRIPE_SECRET_KEY);
 const jwt = require("jsonwebtoken");
@@ -15,28 +15,33 @@ app.use(express.urlencoded(
 ));
 
 
+
+
 const uri = `mongodb+srv://${process.env.DBNAME}:${process.env.DBPASS}@cluster0.lopynog.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
 
+
+// Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
-    serverApi: {
-        version: ServerApiVersion.v1,
-        strict: true,
-        deprecationErrors: true,
-    }
+  serverApi: {
+    version: ServerApiVersion.v1,
+    strict: true,
+    deprecationErrors: true,
+  }
 });
 
 async function run() {
     try {
 
 
-        const usersCollection = client.db("FOODHUB").collection("users");
-        const restaurantUploadCollection = client.db("FOODHUB").collection("restaurantUpload");
-        const foodsCollection = client.db("FOODHUB").collection("foods");
-        const addFoodCollection = client.db("FOODHUB").collection("addFood");
-        const paymentCollection = client.db("FOODHUB").collection("payment");
-        const districtCollection = client.db("FOODHUB").collection("districtAvailable");
-        const searchDataCollection = client.db("FOODHUB").collection("search-data");
+        const usersCollection = client.db("ShoppingGO").collection("users");
+        // sellerProfile
+        const sellerProfileCollection = client.db("ShoppingGO").collection("sellerProfile");
+        const productsCollection = client.db("ShoppingGO").collection("products");
+        const shoppingCartCollection = client.db("ShoppingGO").collection("shoppingCart");
+        const paymentCollection = client.db("ShoppingGO").collection("payment");
+        const districtCollection = client.db("ShoppingGO").collection("districtAvailable");
+        const searchDataCollection = client.db("ShoppingGO").collection("search-data");
         // token create
         app.post("/jwt", async (req, res) => {
             const user = req.body;
@@ -166,8 +171,8 @@ async function run() {
             const updateDoc = {
                 $set: {
                     ...user,
-                    uid: uid,
-                    displayName, photoURL,
+                    // uid: uid,
+                    // displayName, photoURL,
                     date: Date.now(),
                     isNew: user.restaurantAdddress && user.restaurantNumber ? true : false,
 
@@ -189,8 +194,8 @@ async function run() {
                     name: user.name,
                     photo: user.photo,
                     email: user.email,
-                    dob: user.dob,        // ✅ Date of Birth
-                    phoneNumber: user.phoneNumber,  // ✅ Mobile Number
+                    dob: user.dob,       
+                    phoneNumber: user.phoneNumber,  
                     address: user.address
 
                 }
@@ -288,60 +293,60 @@ async function run() {
 
 
         /// Restaurant info 
-        app.get("/restaurantUpload", async (req, res) => {
-            const result = await restaurantUploadCollection.find().toArray();
+        app.get("/sellerProfile", async (req, res) => {
+            const result = await sellerProfileCollection.find().toArray();
             res.send(result)
         })
 
 
-        app.post("/restaurantUpload", verifyToken, async (req, res) => {
-            const addFood = req.body;
-            const result = await restaurantUploadCollection.insertOne(addFood);
+        app.post("/sellerProfile", verifyToken, async (req, res) => {
+            const shoppingCart = req.body;
+            const result = await sellerProfileCollection.insertOne(shoppingCart);
             console.log(result);
             res.send(result);
         })
 
-        app.get("/restaurantUpload/:restaurantName", async (req, res) => {
-            const restaurantName = req.params.restaurantName;
-            const query = { restaurantName: restaurantName };
-            const result = await restaurantUploadCollection.findOne(query);
+        app.get("/sellerProfile/:shopName", async (req, res) => {
+            const shopName = req.params.shopName;
+            const query = { shopName: shopName };
+            const result = await sellerProfileCollection.findOne(query);
             res.send(result)
         })
-        app.get("/restaurantUpload/:districtName", async (req, res) => {
+        app.get("/sellerProfile/:districtName", async (req, res) => {
             const districtName = req.params.districtName;
             const query = { districtName: districtName };
-            const result = await restaurantUploadCollection.find(query).toArray();
+            const result = await sellerProfileCollection.find(query).toArray();
             console.log(result);
             res.send(result);
         })
-        app.get("/restaurantUpload/:restaurantName", async (req, res) => {
-            const restaurantName = req.params.restaurantName;
-            const query = { restaurantName: restaurantName };
-            const result = await restaurantUploadCollection.findOne(query);
+        app.get("/sellerProfile/:shopName", async (req, res) => {
+            const shopName = req.params.shopName;
+            const query = { shopName: shopName };
+            const result = await sellerProfileCollection.findOne(query);
             res.send(result);
         });
 
-        app.get("/restaurantUpload/district/:districtName", async (req, res) => {
+        app.get("/sellerProfile/district/:districtName", async (req, res) => {
             const districtName = req.params.districtName;
             const query = { districtName: districtName };
-            const result = await restaurantUploadCollection.find(query).toArray();
+            const result = await sellerProfileCollection.find(query).toArray();
             console.log(result);
             res.send(result);
         });
 
-        app.delete("/restaurantUpload/:restaurantName", async (req, res) => {
-            const restaurantName = req.params.restaurantName;
-            const query = { restaurantName: restaurantName }
-            const result = await restaurantUploadCollection.deleteOne(query);
+        app.delete("/sellerProfile/:shopName", async (req, res) => {
+            const shopName = req.params.shopName;
+            const query = { shopName: shopName }
+            const result = await sellerProfileCollection.deleteOne(query);
             res.send(result);
         })
-        app.delete("/restaurantUpload/:restaurantName/:foodName", async (req, res) => {
-            const { restaurantName, foodName } = req.params;
+        app.delete("/sellerProfile/:shopName/:productName", async (req, res) => {
+            const { shopName, productName } = req.params;
 
-            const filter = { restaurantName: restaurantName };
-            const update = { $pull: { foods: { foodName: foodName } } }; // Remove only the matching food
+            const filter = { shopName: shopName };
+            const update = { $pull: { products: { productName: productName } } }; // Remove only the matching food
 
-            const result = await restaurantUploadCollection.updateOne(filter, update);
+            const result = await sellerProfileCollection.updateOne(filter, update);
 
             if (result.modifiedCount > 0) {
                 res.send({ success: true, message: "Food item deleted successfully" });
@@ -349,28 +354,28 @@ async function run() {
                 res.status(404).send({ success: false, message: "Food not found" });
             }
         });
-        app.patch("/restaurantUpload/:restaurantName", async (req, res) => {
-            const restaurantName = req.params.restaurantName;
+        app.patch("/sellerProfile/:shopName", async (req, res) => {
+            const shopName = req.params.shopName;
             const foodInfo = req.body;
-            const query = { restaurantName };
+            const query = { shopName };
             const updateDoc = {
-                $push: { foods: foodInfo }, // Push foodInfo into the "foods" array
+                $push: { products: foodInfo }, // Push foodInfo into the "products" array
             };
 
-            const result = await restaurantUploadCollection.updateOne(query, updateDoc);
+            const result = await sellerProfileCollection.updateOne(query, updateDoc);
             res.send(result);
         });
 
-        // Foods Related  api 
-        app.get("/foods", verifyToken, verifyAdmin, verifyModerator, verifyOwner, async (req, res) => {
-            const result = await foodsCollection.find().toArray();
+        // products Related  api 
+        app.get("/products", verifyToken, verifyAdmin, verifyModerator, verifyOwner, async (req, res) => {
+            const result = await productsCollection.find().toArray();
             res.send(result)
         })
 
-        app.delete("/foods/:id", async (req, res) => {
+        app.delete("/products/:id", async (req, res) => {
             const id = req.params.id;
             const query = { _id: new ObjectId(id) };
-            const result = await foodsCollection.deleteOne(query);
+            const result = await productsCollection.deleteOne(query);
             res.send(result)
         })
 
@@ -388,12 +393,12 @@ async function run() {
                 total_amount: parseFloat(payment.foodPrice),
                 currency: "BDT",
                 tran_id: trxid,
-                success_url: "https://foodhub-d3e1e.web.app/dashboard/paymentSuccess",
+                success_url: "https://ShoppingGO-d3e1e.web.app/dashboard/paymentSuccess",
                 fail_url: "http://localhost:5173/dashboard/fail",
                 cancel_url: "http://localhost:5173/dashboard/cancel",
                 ipn_url: "http://localhost:5173/dashboard/ipn-success-payment",
                 shipping_method: "Courier",
-                product_name: payment.foodName || "Unknown",
+                product_name: payment.productName || "Unknown",
                 product_category: payment.category || "General",
                 product_profile: "general",
                 cus_name: payment.customerName || "Customer",
@@ -458,9 +463,9 @@ async function run() {
                 }
 
                 console.log("✅ Payment status updated successfully!");
-                const deletedResult = await addFoodCollection.deleteMany(query);
+                const deletedResult = await shoppingCartCollection.deleteMany(query);
                 // Redirect user to success page
-                res.redirect("https://foodhub-d3e1e.web.app/dashboard/paymentSuccess");
+                res.redirect("https://ShoppingGO-d3e1e.web.app/dashboard/paymentSuccess");
             } catch (error) {
                 console.error(" Error in processing payment success:", error);
                 res.status(500).send({ error: "Internal Server Error" });
@@ -507,7 +512,7 @@ async function run() {
                     $in: payment.cartFoodId.map(id => new ObjectId(id))
                 }
             };
-            const deletedResult = await addFoodCollection.deleteMany(query);
+            const deletedResult = await shoppingCartCollection.deleteMany(query);
             res.send({ paymentResult, deletedResult });
 
         });
@@ -519,19 +524,19 @@ async function run() {
             res.send(result)
         })
 
-        // addfood cart api 
-        app.get("/addFood", async (req, res) => {
+        // shoppingCart cart api 
+        app.get("/shoppingCart", async (req, res) => {
             const email = req.query.email;
             const query = { email: email };
-            const result = await addFoodCollection.find(query).toArray()
+            const result = await shoppingCartCollection.find(query).toArray()
             res.send(result);
         })
-        app.post("/addFood", verifyToken, async (req, res) => {
+        app.post("/shoppingCart", verifyToken, async (req, res) => {
             const foodInfo = req.body;
-            const result = await addFoodCollection.insertOne(foodInfo);
+            const result = await shoppingCartCollection.insertOne(foodInfo);
             res.send(result)
         })
-        app.patch("/addFood/:id", async (req, res) => {
+        app.patch("/shoppingCart/:id", async (req, res) => {
             const id = req.params.id;
             let { quantity } = req.body;
 
@@ -548,7 +553,7 @@ async function run() {
                     quantity: parseFloat(1)
                 };
 
-                const result = await addFoodCollection.updateOne(query, updateDoc);
+                const result = await shoppingCartCollection.updateOne(query, updateDoc);
                 res.send(result);
             } catch (error) {
                 console.error("Error updating quantity:", error);
@@ -557,10 +562,10 @@ async function run() {
         });
 
 
-        app.delete("/addFood/:id", verifyToken, async (req, res) => {
+        app.delete("/shoppingCart/:id", verifyToken, async (req, res) => {
             const id = req.params.id;
             const query = { _id: new ObjectId(id) }
-            const result = await addFoodCollection.deleteOne(query);
+            const result = await shoppingCartCollection.deleteOne(query);
             console.log(result);
             res.send(result)
         })
@@ -581,15 +586,15 @@ async function run() {
         await client.db("admin").command({ ping: 1 });
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
     } finally {
-        // Ensures that the client will close when you finish/error
-
-    }
+    // Ensures that the client will close when you finish/error
+ 
+  }
 }
 run().catch(console.dir);
 
 app.get("/", (req, res) => {
-    res.send("FOODHUB server is running")
+    res.send("ShoppingGO server is running")
 })
 app.listen(port, () => {
-    console.log(`Signnel crud server ${port}`);
+    console.log(`Signel crud server ${port}`);
 })

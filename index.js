@@ -130,10 +130,16 @@ async function run() {
             const isModerator = user?.role === 'moderator';
             res.send({ moderator: isModerator });
         });
+        // check user information
+      app.get("/users/:id" ,  verifyToken , async (req, res) => {
+        const id = req.params.id;
+        const query = {_id : new ObjectId(id)}
+        const result = await usersCollection.findOne(query);
+        res.send(result)
+      })
+        // Check if user is a restaurant seller
 
-        // Check if user is a restaurant owner
-
-        app.get("/users", verifyToken, verifyAdmin, async (req, res) => {
+        app.get("/users", verifyToken, async (req, res) => {
             const result = await usersCollection.find().toArray();
             res.send(result)
         })
@@ -254,17 +260,17 @@ async function run() {
             res.send(result);
         });
 
-        const verifyOwner = async (req, res, next) => {
+        const verifySeller = async (req, res, next) => {
             const email = req.decoded.email;
             const query = { email: email };
             const user = await usersCollection.findOne(query);
-            const isOwner = user?.role === "owner";
-            if (isOwner) {
+            const isSeller = user?.role === "seller";
+            if (isSeller) {
                 return res.status(403).send({ message: "forbidden access" })
             }
             next()
         }
-        app.get('/users/restaurantOwner/:email', verifyToken, async (req, res) => {
+        app.get('/users/seller/:email', verifyToken, async (req, res) => {
             const email = req.params.email;
 
             if (email !== req.decoded.email) {
@@ -272,22 +278,22 @@ async function run() {
             }
 
             const user = await usersCollection.findOne({ email });
-            const isOwner = user?.role === 'owner';
-            res.send({ owner: isOwner });
+            const isSeller = user?.role === 'seller';
+            res.send({ seller: isSeller });
         });
 
-        app.patch("/users/restaurantOwner/:id", verifyToken, verifyAdmin, async (req, res) => {
+        app.patch("/users/seller/:id", verifyToken,async (req, res) => {
             const id = req.params.id;
-            console.log("owner id", id);
+            console.log("seller id", id);
             const filter = { _id: new ObjectId(id) }
-            console.log("owner ", filter);
+            console.log("seller", filter);
             const updateDoc = {
                 $set: {
-                    role: "owner"
+                    role: "seller"
                 }
             }
             const result = await usersCollection.updateOne(filter, updateDoc)
-            console.log("owner result", result);
+            console.log("seller result", result);
             res.send(result)
         })
 
@@ -367,7 +373,7 @@ async function run() {
         });
 
         // products Related  api 
-        app.get("/products", verifyToken, verifyAdmin, verifyModerator, verifyOwner, async (req, res) => {
+        app.get("/products", verifyToken, verifyAdmin, verifyModerator, verifySeller, async (req, res) => {
             const result = await productsCollection.find().toArray();
             res.send(result)
         })
